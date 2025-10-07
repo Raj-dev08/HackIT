@@ -4,14 +4,51 @@ import { generateToken } from "../lib/utils.js";
 import cloudinary from "../lib/cloudinary.js";
 import {upsertStreamUser} from "../lib/stream.js"
 import { generateStreamToken } from "../lib/stream.js";
+import sodium from 'libsodium-wrappers';
+import crypto from 'crypto'
+await sodium.ready;
+
+
+const signupNonces = new Map();
+
+export const signupChallenge = async ( req, res, next ) => {
+  try {
+   
+    const nonce = crypto.randomUUID();
+    const nonceId = crypto.randomUUID();
+    signupNonces.set(nonceId,nonce);
+
+    
+    setTimeout(()=> signupNonces.delete(nonceId), 5*60*1000);
+    res.status(200).json({messaeg:"done",nonce,nonceId})
+  } catch (error) {
+    next(error)
+  }
+}
 
 export const signup = async (req, res,next) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, publicKey, signature, nonceId} = req.body;
+    // console.log(req.body)
     try {
-        if(!name || !email  || !password){
+        if(!name || !email  || !password || !publicKey|| !signature|| !nonceId){
             return res.status(400).json({message: "All fields are required"});
         }
     
+        const nonce = signupNonces.get(nonceId)
+
+        if(!nonce){
+          return res.status(400).json({message:"Nonce expired or invalid" });
+        }
+
+        signupNonces.delete(nonceId)
+
+        const pub = sodium.from_base64( publicKey, sodium.base64_variants.ORIGINAL);
+        const sig = sodium.from_base64( signature, sodium.base64_variants.ORIGINAL);
+        const ok = sodium.crypto_sign_verify_detached(sig,sodium.from_string(nonce),pub);//verify all the signautre,nonce using the publickey
+        if(!ok){
+          return res.status(400).json({message:"Invalid signature proof"});
+        }
+
         if(password.length < 4){
             return res.status(400).json({message: "Password must be atleast 4 characters long"});
         }
@@ -28,7 +65,8 @@ export const signup = async (req, res,next) => {
         const newUser = new User({
             name,
             email,  
-            password: hashedPassword
+            password: hashedPassword,
+            publicToken:publicKey
         });
 
         if (newUser) {

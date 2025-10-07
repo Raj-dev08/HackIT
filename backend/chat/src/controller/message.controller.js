@@ -1,4 +1,5 @@
 import Message from "../model/message.model.js";
+import User from "../model/user.model.js";
 import { redis } from "../lib/redis.js";
 
 import { sendMessage } from "../kafka/producer.js";
@@ -49,10 +50,22 @@ export const getMessages = async (req, res, next) => {
         const cacheKey = `messages:${user._id}:${receiverId}:${limit}:${before}`;
         const cachedMessages = await redis.get(cacheKey);
 
+        let receiverPublicKey = JSON.parse(await redis.get(`publicKey:${receiverId}`));
+
+        if (!receiverPublicKey){
+          const receiver = await User.findById(receiverId).select("publicToken");
+          if(!receiver || !receiver.publicToken){
+            return res.status(404).json({message: "Receiver public key not found"});
+          }
+
+          receiverPublicKey = receiver.publicToken;//always a string
+          await redis.set( `publicKey:${receiverId}`, receiverPublicKey, "EX", 7*24*60*60);//cache for 7 days
+        }
+
         if (cachedMessages) {
             const parsedMessages = JSON.parse(cachedMessages);
             const {messages, hasMore} = parsedMessages;
-            return res.status(200).json({ messages, hasMore });
+            return res.status(200).json({ messages, hasMore , receiverPublicKey});
         }
 
         const query = {
@@ -86,7 +99,7 @@ export const getMessages = async (req, res, next) => {
 
         await redis.set(cacheKey, JSON.stringify(cacheData), "EX", 60 * 60); // Cache for 1 hour
 
-        return res.status(200).json({ messages, hasMore });
+        return res.status(200).json({ messages, hasMore , receiverPublicKey });
     } catch (error) {
         next(error);
     }

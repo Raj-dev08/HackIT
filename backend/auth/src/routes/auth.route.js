@@ -3,6 +3,7 @@ import {
         login,
         logout,
         signup ,
+        signupChallenge,
         updateProfile,
         checkAuth,
         beAdmin,
@@ -13,6 +14,7 @@ import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
+router.get("/signup-challenge",signupChallenge);
 router.post("/signup", signup);
 router.post("/login", login);
 router.post("/logout", logout);

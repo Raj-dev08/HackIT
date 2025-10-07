@@ -2,6 +2,7 @@ import User from "../model/user.model.js";
 import FriendRequest from "../model/friendRequest.model.js";
 import { redis } from "../lib/redis.js";
 import { sendFriendEvent } from "../kafka/producer.js";
+import Message from "../model/message.model.js";
 
 export const getAllFriends = async (req, res,next) => {
     try {
@@ -13,16 +14,49 @@ export const getAllFriends = async (req, res,next) => {
 
         const cachedFriends = JSON.parse(await redis.get(`friends:${user._id}`));
 
+        let userUnseenMap={};
 
         if (cachedFriends) {
-            return res.status(200).json({friends: JSON.parse(cachedFriends)});
+
+            const unreadCounts = await Promise.all(
+            cachedFriends.map(async (friend) => {
+                const unreadCount = await Message.countDocuments({
+                    receiverId: user._id,
+                    senderId: friend._id,
+                    isSeen: false,
+                });
+
+                return { id: friend._id, unreadCount };
+                })
+            );
+
+            unreadCounts.forEach((unreadCounts)=>{
+                userUnseenMap[unreadCounts.id]=unreadCounts.unreadCount;
+            })
+            return res.status(200).json({friends: cachedFriends , unreadCounts:userUnseenMap});
         }
 
         const userAcc= await User.findById(user._id).populate("friends", "name profilePic email description friends");
 
         if(userAcc.friends.length === 0) {
-            return res.status(404).json({message: "No friends found"});
+            return res.status(200).json({message: "No friends found"});
         }
+
+        const unreadCounts = await Promise.all(
+        userAcc.friends.map(async (friend) => {
+            const unreadCount = await Message.countDocuments({
+                receiverId: user._id,
+                senderId: friend._id,
+                isSeen: false,
+            });
+
+            return { id: friend._id, unreadCount };
+            })
+        );
+
+        unreadCounts.forEach((unreadCounts)=>{
+            userUnseenMap[unreadCounts.id]=unreadCounts.unreadCount;
+        })
 
         await redis.set(`friends:${user._id}`, JSON.stringify(userAcc.friends),"EX",60*60); // Cache for 1 hour
 
@@ -68,7 +102,8 @@ export const searchProfile = async (req, res, next) => {
       _id: { $ne: user._id }, // Exclude self
     })
       .sort(sort) // Sort by relevance if text search used
-      .lean();
+      .lean()
+      .select("-password -publicToken");
 
 
 
@@ -329,7 +364,7 @@ export const viewFriendProfile = async (req, res,next) => {
             return res.status(400).json({message: "You cannot view your own profile"});
         }
 
-        const friend = await User.findById(friendId).select("-password").lean();
+        const friend = await User.findById(friendId).select("-password -publicToken").lean();
 
         if(!friend) {
             return res.status(404).json({message: "Friend not found"});

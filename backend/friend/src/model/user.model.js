@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema(
         type: String,
         default: "https://img.freepik.com/premium-vector/vector-young-man-anime-style-character-vector-illustration-design-manga-anime-boy_147933-12445.jpg?semt=ais_hybrid&w=740",
     },
+    publicToken:{
+        type: String,
+        required: true
+    },
     friends: [
         {
             type: mongoose.Schema.Types.ObjectId,
