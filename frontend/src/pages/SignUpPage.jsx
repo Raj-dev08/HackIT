@@ -4,19 +4,19 @@ import { Eye, EyeOff, Loader2, Lock, Mail, KeyboardIcon, User } from "lucide-rea
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import Globe from "react-globe.gl";
-// import { useTypeWriter } from "../components/typeWriter";
+import ParticleBackground from "../components/ParticleBackground";
 
 
 import { motion } from "framer-motion";
 
 const imageVariants = {
-  initial: { opacity: 0, x: -300 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -300 },
+  initial: { opacity: 0,scale:0.2 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.2 },
 };
-
 const SignUpPage = () => {
   const [points, setPoints] = useState([]);
+  const [showBg , setShowBg] = useState(true)
 
   const globeEl = useRef();
 
@@ -38,7 +38,6 @@ const SignUpPage = () => {
 
   const { signup, isSigningUp } = useAuthStore();
 
-//   const text=useTypeWriter("Create Account",100)
 
   const validateForm = () => {
     if (!formData.name.trim()) return toast.error("Full name is required");
@@ -58,7 +57,8 @@ const SignUpPage = () => {
     if (success === true) signup(formData);
   };
  return (
-  <div className="min-h-screen flex items-center justify-center w-full">
+  <div className={`min-h-screen flex items-center justify-center w-full relative overflow-hidden ${showBg?"bg-black":"bg-base-100"}`}>
+    { showBg ? <ParticleBackground /> : ""} 
     <div className="w-full max-w-lg sm:max-w-5xl py-4 mx-4 sm:py-6 md:py-8
      space-y-8 bg-base-300 rounded-xl
      backdrop-blur-sm flex flex-col lg:flex-row items-center justify-center">
@@ -163,14 +163,26 @@ const SignUpPage = () => {
           )}
         </button>
 
-        <div className="text-center">
+        <div className="text-center flex justify-between mx-10 flex-col space-y-3 sm:space-y-0 sm:flex-row">
           <p className="text-base-content/60">
             Already have an account?{" "}
             <Link to="/login" className="link link-primary">
               Sign in
             </Link>
           </p>
+          <div className="flex space-x-2">
+            <p className="text-base-content/60">
+              Have animated Background?
+            </p>
+            <input 
+            type="checkbox"
+            defaultChecked={showBg}
+            onClick={()=>setShowBg(!showBg)}
+            />
+          </div>
+          
         </div>
+        
 
       </form>
 
@@ -181,7 +193,7 @@ const SignUpPage = () => {
           initial="initial"
           animate="animate"
           exit="exit"
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.5 }}
         >
           <div className="max-w-md p-8 w-full">
             <Globe
@@ -189,9 +201,8 @@ const SignUpPage = () => {
               width={400}
               height={400}
               globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg" // realistic land/sea
-              bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
               showAtmosphere={true}
-              atmosphereColor="rgba(0, 153, 255, 0.2)" // light blue glow
+              atmosphereColor="rgba(0, 153, 255)" // light blue glow
               atmosphereAltitude={0.2}
               pointsData={points}
               pointLat="lat"
