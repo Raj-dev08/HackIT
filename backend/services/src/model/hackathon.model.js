@@ -21,7 +21,7 @@ const hackathonSchema = new mongoose.Schema(
             required:true
         },
         price:{
-            type:Number
+            type:String
         },
         description:{
             type:String,

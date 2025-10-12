@@ -13,7 +13,9 @@ const PORT=process.env.PORT
 
 const app=express();
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 
 app.use(
   cors({
@@ -28,7 +30,7 @@ const limiter = rateLimit({
     sendCommand: (...args) => redis.call(...args), 
   }),
   windowMs: 60 * 1000, // 1 minute window
-  max: 10, // max 10 requests per IP per window
+  max: 100, // max 10 requests per IP per window
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false,
   handler:(req,res)=>{

@@ -1,8 +1,14 @@
 import { Routes,Route,Navigate } from "react-router-dom"
 import { useEffect,useState } from "react"
+import 'leaflet/dist/leaflet.css';
+
 
 import SignUpPage from "./pages/SignUpPage"
 import LoginPage from "./pages/LoginPage"
+import ExplorePage from "./pages/ExplorePage"
+import CreateHackathon from "./pages/CreateHackathon"
+import HackathonPage from "./pages/HackathonPage"
+import HackathonMap from "./pages/HackathonMap";
 
 import { useAuthStore } from "./store/useAuthStore"
 
@@ -29,8 +35,12 @@ function App() {
     <div data-theme="forest">
       <Toaster position="top-right" reverseOrder={false} />
        <Routes>
+            <Route path="/" element={authUser?<ExplorePage/>:<Navigate to="/login"/>}/>
             <Route path="/signup" element={!authUser?<SignUpPage />:<Navigate to="/"/>} />
             <Route path="/login" element={!authUser?<LoginPage />:<Navigate to="/"/>} />
+            <Route path="/create" element={authUser?<CreateHackathon/>:<Navigate to="/login"/>}/>
+            <Route path="/hackathon/:id"  element={authUser?<HackathonPage/>:<Navigate to="/login"/>}/>
+            <Route path="/map" element={authUser?<HackathonMap/>:<Navigate to="/login"/>}/>
         </Routes>
     </div>
   )

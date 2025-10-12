@@ -14,6 +14,16 @@ export const createHackathon = async (req,res,next) => {
             return res.status(400).json({message:"All fields are required"})
         }
 
+        const eventDate = new Date(date);
+
+        if (isNaN(eventDate.getTime())) {
+            return res.status(400).json({ message: "Invalid date format!" });
+        }
+
+        if (eventDate < new Date()) {
+            return res.status(400).json({ message: "Date cannot be in the past!" });
+        }
+
         if ( websiteUrl ){
             extra.websiteUrl=websiteUrl
         }
@@ -30,7 +40,7 @@ export const createHackathon = async (req,res,next) => {
             description,
             lat,
             lng,
-            date,
+            date:eventDate,
             ...extra,
             Host:user._id
         })
@@ -52,18 +62,19 @@ export const getUserHackathons = async (req,res,next) => {
     try {
         const {user}=req
 
-        const cachedHackathons = await redis.get(`userHackathons:${user._id}`)
+        // const cachedHackathons = await redis.get(`userHackathons:${user._id}`)
 
-        if (cachedHackathons){
-           return res.status(200).json({hackathons:JSON.parse(cachedHackathons)})
-        }
+        // if (cachedHackathons){
+        //    return res.status(200).json({hackathons:JSON.parse(cachedHackathons)})
+        // }
         
         const hackathons = await Hackathons.find({ Host: user._id })
             .populate("Host", "name profilePic")
             .lean(); // Use lean() for better performance if you don't need Mongoose documents
  
-        await redis.set(`userHackathons:${user._id}`,JSON.stringify(hackathons),"EX",60*60) // just caching for a hour so it can have errors
-        
+        // await redis.set(`userHackathons:${user._id}`,JSON.stringify(hackathons),"EX",60*60)
+        // id we cache there is potential fake data there for a hour 
+        //we can cache per document but thats just too much
         return res.status(200).json({hackathons})
     } catch (error) {
         next(error)
@@ -95,7 +106,8 @@ export const getHackathons = async (req,res,next) => {
         const hackathons = await Hackathons.find(searchConditions)
             .limit(limit)
             .skip(skip)
-            .select("name description lat lng upvotes downvotes date");
+            .select("name description lat lng upvotes downvotes date image")
+            .sort({createdAt:-1});
 
         const countHackathons = await Hackathons.countDocuments(searchConditions)
 
@@ -161,21 +173,26 @@ export const vote = async (req,res,next) => {
 
         if (method === "like"){
             if(hackathon.upvotes.includes(user._id)){
-                return res.status(400).json({message:"Already Liked"})
+                hackathon.upvotes.pull(user._id)
             }
-            if(hackathon.downvotes.includes(user._id)){
-                hackathon.downvotes.pull(user._id)
+            else{
+                if(hackathon.downvotes.includes(user._id)){
+                    hackathon.downvotes.pull(user._id)
+                }
+                hackathon.upvotes.push(user._id)
             }
-            hackathon.upvotes.push(user._id)
         }
         else if (method === "dislike"){
             if(hackathon.downvotes.includes(user._id)){
-                return res.status(400).json({message:"Already Disliked"})
+               hackathon.downvotes.pull(user._id)
             }
-            if(hackathon.upvotes.includes(user._id)){
-                hackathon.upvotes.pull(user._id)
+            else{
+                if(hackathon.upvotes.includes(user._id)){
+                    hackathon.upvotes.pull(user._id)
+                }
+                hackathon.downvotes.push(user._id)
             }
-            hackathon.downvotes.push(user._id)
+            
         }
         
         await hackathon.save()
@@ -183,7 +200,7 @@ export const vote = async (req,res,next) => {
         await redis.del(`hackathon:${hackathonId}`)
         await redis.del(`userHackathons:${hackathon.Host}`)
 
-        return res.status(200).json({message:method === "like" ? "Liked successfully" : "Disliked successfully" })
+        return res.status(200).json({hackathon})
     } catch (error) {
         next(error)
     }
@@ -219,7 +236,7 @@ export const giveReview = async (req,res,next) => {
         await redis.del(`hackathon:${hackathonId}`)
         await redis.del(`userHackathons:${hackathon.Host}`)
 
-        return res.status(200).json({message:"Successfully gave review"})
+        return res.status(200).json({message:"Successfully gave review",hackathon})
     } catch (error) {
         next(error)
     }

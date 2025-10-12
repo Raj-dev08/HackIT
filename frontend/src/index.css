@@ -19,17 +19,7 @@
   margin-bottom: 0.8rem;
 }
 
-@layer utilities {
-  .animate-slide-up {
-    animation: slideUp 0.3s ease-out;
-  }
-
-  @keyframes slideUp {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
-  }
+.leaflet-control-scale.custom-scale {
+  bottom: 80px !important; /* move it 80px above the bottom */
+  left: 10px !important;   /* optional: adjust left offset */
 }
