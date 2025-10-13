@@ -137,16 +137,6 @@ export const useAuthStore = create((set, get) => ({
       toast.error(error.response?.data?.message||"something went wrong");
     }
   },
-  updateBalance: async(amount)=>{
-    try{
-      const res=await axiosInstance.post("/auth/api/update-balance",{amount})
-      toast.success(res.data.message);
-      get().checkAuth()
-    }catch(error){
-      console.log("error in updatebalnce:", error);
-      toast.error(error.response?.data?.message||"something went wrong");
-    }
-  },
   connectSocket: () => {
     const { authUser } = get();
     if (!authUser || get().socket?.connected) return;

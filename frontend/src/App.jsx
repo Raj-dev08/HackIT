@@ -8,7 +8,8 @@ import LoginPage from "./pages/LoginPage"
 import ExplorePage from "./pages/ExplorePage"
 import CreateHackathon from "./pages/CreateHackathon"
 import HackathonPage from "./pages/HackathonPage"
-import HackathonMap from "./pages/HackathonMap";
+import HackathonMap from "./pages/HackathonMap"
+import UserProfile from "./pages/UserProfile";
 
 import { useAuthStore } from "./store/useAuthStore"
 
@@ -41,6 +42,7 @@ function App() {
             <Route path="/create" element={authUser?<CreateHackathon/>:<Navigate to="/login"/>}/>
             <Route path="/hackathon/:id"  element={authUser?<HackathonPage/>:<Navigate to="/login"/>}/>
             <Route path="/map" element={authUser?<HackathonMap/>:<Navigate to="/login"/>}/>
+            <Route path="/profile" element={authUser?<UserProfile/>:<Navigate to="/login"/>}/>
         </Routes>
     </div>
   )

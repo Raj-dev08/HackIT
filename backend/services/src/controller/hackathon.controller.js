@@ -209,7 +209,7 @@ export const vote = async (req,res,next) => {
 export const giveReview = async (req,res,next) => {
     try {
         const {user}=req
-        const {review}=req.body
+        const { review , reviewId }=req.body
         const hackathonId=req.params.id
 
         if (!review){
@@ -221,6 +221,7 @@ export const giveReview = async (req,res,next) => {
         }
 
         const hackathon = await Hackathons.findById(hackathonId)
+                            .populate("Host","name profilePic")
 
         if(!hackathon){
             return res.status(404).json({message:"hackathon doesnt exist"})
@@ -228,15 +229,61 @@ export const giveReview = async (req,res,next) => {
 
         hackathon.reviews.push({
             review,
-            reviewer:user._id
+            reviewer: {
+                _id: user._id,
+                name: user.name,
+                profilePic: user.profilePic
+            },
+            _id: reviewId
         })
         
         await hackathon.save()
 
-        await redis.del(`hackathon:${hackathonId}`)
-        await redis.del(`userHackathons:${hackathon.Host}`)
+        const expireTime = Math.floor( (hackathon.date - Date.now() )/1000)
 
-        return res.status(200).json({message:"Successfully gave review",hackathon})
+        await redis.set(`hackathon:${hackathonId}`,JSON.stringify(hackathon),"EX",expireTime)
+
+        return res.status(200).json({message:"Successfully gave review"})
+    } catch (error) {
+        next(error)
+    }
+}
+
+export const deleteReview = async (req,res,next) => {
+    try {
+        const {user}=req
+        const { reviewId , hackathonId }=req.params
+
+        if (!reviewId || !hackathonId){
+            return res.status(400).json({message:"Must provide all IDs"})
+        }
+
+        const hackathon = await Hackathons.findById(hackathonId)
+                            .populate("Host","name profilePic")
+
+        if(!hackathon){
+            return res.status(404).json({message:"hackathon doesnt exist"})
+        }
+
+        const review = hackathon.reviews.id(reviewId)
+      
+
+        if (!review){
+            return res.status(404).json({message:"Review doesnt exist"})
+        }
+
+        if ( review.reviewer._id.toString() !== user._id.toString() ){
+            return res.status(403).json({message:"You can only delete your own reviews"})
+        }
+       
+        hackathon.reviews.pull({ _id: reviewId })
+        await hackathon.save()
+
+        const expireTime = Math.floor( (hackathon.date - Date.now() )/1000)
+
+        await redis.set(`hackathon:${hackathonId}`,JSON.stringify(hackathon),"EX",expireTime)
+
+        return res.status(200).json({message:"Successfully deleted review"})
     } catch (error) {
         next(error)
     }
@@ -266,6 +313,9 @@ export const deleteHackathon = async (req,res,next) => {
         if ( HostID.toString() !== user._id.toString()){
             return res.status(403).json({message:"Only the host can delete the hackathon"})
         }
+
+        user.hackathons.pull(hackathonId)
+        await user.save()
 
         await Hackathons.findByIdAndDelete(hackathonId)
 

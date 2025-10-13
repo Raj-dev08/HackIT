@@ -2,8 +2,9 @@ import { useRef, useEffect } from "react";
 
 export default function ParticleBackground({
   color = "255,255,255",
-  particleCount = 20,
+  particleCount = 20,//starting particle count
   maxDistance = 120,
+  limit = 80,//max particles
 }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -195,7 +196,7 @@ export default function ParticleBackground({
         });
       }
       // keep upper limit
-      if (arr.length > 80) arr.splice(0, arr.length - 80);
+      if (arr.length > limit) arr.splice(0, arr.length - limit);
     }
 
     // init

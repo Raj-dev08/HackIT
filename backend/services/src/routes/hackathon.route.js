@@ -5,6 +5,7 @@ import { createHackathon,
         getHackathons,
         vote,
         giveReview,
+        deleteReview,
         deleteHackathon
     } from "../controller/hackathon.controller.js"
 import { protectRoute } from "../middleware/auth.middleware.js"
@@ -19,6 +20,7 @@ router.get("/user-hackathons",protectRoute,getUserHackathons)
 router.post("/create",protectRoute,createHackathon)
 router.post("/vote/:id",protectRoute,vote)
 router.post("/give-review/:id",protectRoute,giveReview)
+router.delete("/delete-review/:reviewId/from/:hackathonId",protectRoute,deleteReview)
 
 router.get("/:id",getHackathonDetail)
 

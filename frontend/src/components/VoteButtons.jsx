@@ -5,10 +5,9 @@ import {ThumbsUp,ThumbsDown} from 'lucide-react'
 import { useAuthStore } from "../store/useAuthStore";
 
 
-const VoteButtons = ({ hackathonId }) => {
+const VoteButtons = ({ hackathon }) => {
   const { voteHackathon, hackathons } = useHackStore();
   const { checkAuth,authUser} = useAuthStore()
-  const hackathon = hackathons.find((h) => h._id === hackathonId);
   const [loading, setLoading] = useState(false);
 
   useEffect(()=>{
@@ -19,13 +18,15 @@ const VoteButtons = ({ hackathonId }) => {
     if (loading) return;
     setLoading(true);
     try {
-      await voteHackathon(hackathonId, voteType);
+      console.log("voting", voteType);
+      await voteHackathon(hackathon._id, voteType);
     } catch {
       toast.error("Failed to vote. Try again.");
     } finally {
       setLoading(false);
     }
   };
+
 
   const upvotes = hackathon?.upvotes?.length || 0;
   const downvotes = hackathon?.downvotes?.length || 0;

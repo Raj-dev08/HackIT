@@ -55,9 +55,18 @@ const hackathonSchema = new mongoose.Schema(
                     required:true
                 },
                 reviewer:{
-                    type:mongoose.Schema.Types.ObjectId,
-                    ref:"User",
-                    required:true
+                    _id:{
+                        type:mongoose.Schema.Types.ObjectId,
+                        ref:"User",
+                        required:true
+                    },
+                    name:{
+                        type:String,
+                        required:true
+                    },
+                    profilePic:{
+                        type:String
+                    }
                 }
             }
         ]

@@ -41,7 +41,7 @@ const HackathonCard = ({ hackathon }) => {
             </Link>
         </div>
 
-       <VoteButtons hackathonId={hackathon._id} />
+       <VoteButtons hackathon={hackathon} />
       </div>
     </div>
   );

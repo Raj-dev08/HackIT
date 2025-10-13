@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
+import { ObjectId } from "bson";
 
 export const useHackStore = create((set, get) => ({
     hackathons: [],
@@ -10,6 +11,8 @@ export const useHackStore = create((set, get) => ({
     searchFilter:"",
     clickedHackathon:null,
     updatingHackathon:[],
+    isGivingReview:false,
+    isDeletingReview:false,
 
 
     setUpdatingHackathon: (data) => set({updatingHackathon:data}),
@@ -75,7 +78,7 @@ export const useHackStore = create((set, get) => ({
             return false
         }
     },
-    voteHackathon: async (id, method,authUser) => {
+    voteHackathon: async (id, method) => {
         try {
             if (!["like", "dislike"].includes(method)) {
                toast.error("Invalid Method");
@@ -85,34 +88,77 @@ export const useHackStore = create((set, get) => ({
             set((state)=>({
                 hackathons: state.hackathons.map((h)=>
                     h._id === id? res.data.hackathon : h 
-                )
+                ),
+                userHackathons: state.userHackathons.some(h => h._id === id)
+                    ? state.userHackathons.map(h => h._id === id ? res.data.hackathon : h)
+                    : state.userHackathons
             }))
+            console.log(get().userHackathons)
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to vote");
         }
     },
-    giveReview: async (id, review) => {
+    giveReview: async (id, review, user) => {
+        set({ isGivingReview: true })
         try {
-            const res = await axiosInstance.post(`/service/api/give-review/${id}`, { review });
+            const reviewId = new ObjectId();
+            const res = await axiosInstance.post(`/service/api/give-review/${id}`, { review , reviewId });
             toast.success(res.data.message);
-            set((state)=>({
-                hackathons: state.hackathons.map((h)=>
-                    h._id === id? res.data.hackathon : h 
-                )
-            }))
+            const currentHackathon = get().clickedHackathon;
+           
+            const newReview = {
+                reviewer: {
+                    _id: user._id,
+                    name: user.name,
+                    profilePic: user.profilePic,
+                },
+                review,
+                _id: reviewId
+            };
+           
+            set({
+                clickedHackathon: {
+                    ...currentHackathon,
+                    reviews: [...(currentHackathon?.reviews || []), newReview],
+                },
+                isGivingReview: false,
+            });
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to give review");
+            set({ isGivingReview: false });
+        }
+    },
+    deleteReview: async (reviewId, hackathonId) => {
+        set({ isDeletingReview: true });
+        try {
+            const res = await axiosInstance.delete(`/service/api/delete-review/${reviewId}/from/${hackathonId}`);
+            toast.success(res.data.message);
+            const currentHackathon = get().clickedHackathon;
+            set({
+                clickedHackathon: {
+                    ...currentHackathon,
+                    reviews: currentHackathon.reviews.filter((r) => r._id !== reviewId),
+                },
+                isDeletingReview: false,
+            });
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to delete review");
+            set({ isDeletingReview: false });
         }
     },
     deleteHackathon: async (id) => {
+        set({ isLoading: true });
         try {
-        const res = await axiosInstance.delete(`/service/api/${id}`);
-        toast.success(res.data.message);
-        set((state) => ({
-            userHackathons: state.userHackathons.filter((h) => h._id !== id),
-        }));
+            const res = await axiosInstance.delete(`/service/api/${id}`);
+            toast.success(res.data.message);
+            set((state) => ({
+                userHackathons: state.userHackathons.filter((h) => h._id !== id),
+                hackathons: state.hackathons.filter((h) => h._id !== id),
+                isLoading: false,
+            }));
         } catch (error) {
-        toast.error(error.response?.data?.message || "Failed to delete hackathon");
+            toast.error(error.response?.data?.message || "Failed to delete hackathon");
+            set({ isLoading: false });
         }
     },
 }));

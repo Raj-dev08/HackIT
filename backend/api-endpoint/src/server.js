@@ -29,8 +29,8 @@ const limiter = rateLimit({
   store: new RedisStore({
     sendCommand: (...args) => redis.call(...args), 
   }),
-  windowMs: 60 * 1000, // 1 minute window
-  max: 100, // max 10 requests per IP per window
+  windowMs: 10 * 1000, // 10 seconds window
+  max: 100, // max 100 requests per IP per window
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false,
   handler:(req,res)=>{
