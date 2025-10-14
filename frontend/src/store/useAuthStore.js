@@ -20,7 +20,7 @@ export const useAuthStore = create((set, get) => ({
     try {
       const res = await axiosInstance.get("/auth/api/check");
       set({ authUser: res.data });
-      // get().connectSocket();
+      get().connectSocket();
 
     } catch (error) {
       console.log("Error in checkAuth:", error.response?.data?.message," from ",error.response?.data?.service);
@@ -58,10 +58,10 @@ export const useAuthStore = create((set, get) => ({
 
       const res = await axiosInstance.post("/auth/api/signup", payload);
 
-      console.log(res)
+      // console.log(res)
 
       set({ authUser: res.data });
-      // get().connectSocket();
+      get().connectSocket();
       
       localStorage.setItem(`${get().authUser._id}:privateKey`, privateKey);
       localStorage.setItem(`${get().authUser._id}:publicKey`, publicKey);
@@ -80,7 +80,7 @@ export const useAuthStore = create((set, get) => ({
     try {
       const res = await axiosInstance.post("/auth/api/login", data);
       set({ authUser: res.data });
-      // get().connectSocket();
+      get().connectSocket();
       toast.success("Logged in successfully");
 
 
@@ -95,7 +95,7 @@ export const useAuthStore = create((set, get) => ({
     try {
       await axiosInstance.post("/auth/api/logout");
       set({ authUser: null });
-      // get().disconnectSocket();
+      get().disconnectSocket();
       toast.success("Logged out successfully");
     } catch (error) {
        toast.error(error.response?.data?.message||"something went wrong");
@@ -150,9 +150,9 @@ export const useAuthStore = create((set, get) => ({
 
     set({ socket: socket });
 
-    // socket.on("getOnlineUsers", (userIds) => {
-    //   set({ onlineUsers: userIds });
-    // });
+    socket.on("getOnlineUsers", (userIds) => {
+      set({ onlineUsers: userIds });
+    });
   },
   disconnectSocket: () => {
     if (get().socket?.connected) get().socket.disconnect();

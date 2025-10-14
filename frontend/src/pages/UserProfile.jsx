@@ -86,7 +86,7 @@ const UserProfile = () => {
     <div className="min-h-screen bg-base-200 py-12">
         {isLoading && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                <Loader/>
+                <Loader className="animate-spin"/>
             </div>
         )}
       <div className="max-w-6xl mx-auto px-4 space-y-12">

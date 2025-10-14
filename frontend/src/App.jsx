@@ -9,15 +9,21 @@ import ExplorePage from "./pages/ExplorePage"
 import CreateHackathon from "./pages/CreateHackathon"
 import HackathonPage from "./pages/HackathonPage"
 import HackathonMap from "./pages/HackathonMap"
-import UserProfile from "./pages/UserProfile";
+import UserProfile from "./pages/UserProfile"
+import FriendsList from "./pages/FriendList"
+import IncomingFriendRequests from "./pages/InComingFriendRequests"
+import OutgoingFriendRequests from "./pages/OutgoingFriendRequests";
 
 import { useAuthStore } from "./store/useAuthStore"
+import { useFriendStore } from "./store/useFriendStore";
 
 import { Toaster } from "react-hot-toast"
 import { Loader } from "lucide-react"
 
 function App() {
   const { authUser, isCheckingAuth ,checkAuth} = useAuthStore();
+  const { setSocketListenerForNotifications } = useFriendStore();
+  const [ isSocketSetUp , setIsSocketSetup ] = useState(false)
 
   useEffect(() => {
     checkAuth();
@@ -29,6 +35,11 @@ function App() {
         <Loader className="size-10 animate-spin" />
       </div>
     );
+
+    if (authUser && !isSocketSetUp ) {
+      setIsSocketSetup(true)
+      setSocketListenerForNotifications("receiveRealTimeRequest");
+    }
 
 
     // console.log(authUser)
@@ -43,6 +54,9 @@ function App() {
             <Route path="/hackathon/:id"  element={authUser?<HackathonPage/>:<Navigate to="/login"/>}/>
             <Route path="/map" element={authUser?<HackathonMap/>:<Navigate to="/login"/>}/>
             <Route path="/profile" element={authUser?<UserProfile/>:<Navigate to="/login"/>}/>
+            <Route path="/friends" element={authUser?<FriendsList/>:<Navigate to="/login"/>}/>
+            <Route path="/incoming-friend-requests" element={authUser?<IncomingFriendRequests/>:<Navigate to="/login"/>}/>
+            <Route path="/outgoing-friend-requests" element={authUser?<OutgoingFriendRequests/>:<Navigate to="/login"/>}/>
         </Routes>
     </div>
   )

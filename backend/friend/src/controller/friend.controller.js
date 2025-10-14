@@ -128,10 +128,10 @@ export const getAllFriendRequestsToMe = async (req, res,next) => {
         }
 
         const friendRequests = await FriendRequest.find({receiver: user._id, status: "pending"})
-            .populate("sender", "name profilePic email").lean();
+            .populate("sender", "name profilePic email description").lean();
 
         if(friendRequests.length === 0) {
-            return res.status(404).json({message: "No friend requests found"});
+            return res.status(200).json({message: "No friend requests found"});
         }
 
         await redis.set(`friendRequestsToMe:${user._id}`, JSON.stringify(friendRequests),"EX",60*60); // Cache for 1 hour
@@ -156,10 +156,10 @@ export const getAllFriendRequestsFromMe = async (req, res,next) => {
         }
 
         const friendRequests = await FriendRequest.find({sender: user._id, status: "pending"})
-            .populate("receiver", "name profilePic email").lean();
+            .populate("receiver", "name profilePic email description").lean();
 
         if(friendRequests.length === 0) {
-            return res.status(404).json({message: "No friend requests found"});
+            return res.status(200).json({message: "No friend requests found"});
         }
 
         await redis.set(`friendRequestsFromMe:${user._id}`, JSON.stringify(friendRequests),"EX",60*60); // Cache for 1 hour
@@ -223,17 +223,29 @@ export const sendFriendRequest = async (req, res,next) => {
             receiver: receiverId
         });
 
+        const payLoad = {
+            ...newRequest.toObject(),
+            sender: {
+                _id: user._id,
+                name: user.name,
+                description: user.description,
+                email: user.email,
+                profilePic: user.profilePic
+            }
+        }
+
         await sendFriendEvent({
             type:"friend-request-sent",
             receiverId:receiverId,
-            sender: user
+            sender: user,
+            request:payLoad
         })
         
 
         await redis.del(`friendRequestsToMe:${receiverId}`); // Invalidate cache for receiver
         await redis.del(`friendRequestsFromMe:${user._id}`); // Invalidate cache for sender
 
-        return res.status(201).json({message: "Friend request sent successfully", request: newRequest});
+        return res.status(201).json({message: "Friend request sent successfully"});
     } catch (error) {
         next(error);
     }
@@ -281,7 +293,8 @@ export const acceptFriendRequest = async (req, res,next) => {
         await sendFriendEvent({
             type:"friend-request-accepted",
             acceptedBy:user,
-            receiverId: friendRequest.receiver
+            receiverId: friendRequest.sender,
+            requestId:friendRequestId
         })
 
         await friendRequest.save();
@@ -364,12 +377,18 @@ export const viewFriendProfile = async (req, res,next) => {
             return res.status(400).json({message: "You cannot view your own profile"});
         }
 
+        const cachedFriend = await redis.get(`user:${friendId}`);
+        if (cachedFriend) {
+            return res.status(200).json({friend: JSON.parse(cachedFriend)});
+        }
+
         const friend = await User.findById(friendId).select("-password -publicToken").lean();
 
         if(!friend) {
             return res.status(404).json({message: "Friend not found"});
         }
 
+        await redis.set(`user:${friendId}`,JSON.stringify(friend),"EX",60*60) //cache for 1 hour
         return res.status(200).json({friend});
     } catch (error) {
         next(error);

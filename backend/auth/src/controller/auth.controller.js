@@ -1,6 +1,7 @@
 import User from "../model/user.model.js";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../lib/utils.js";
+import { redis } from "../lib/redis.js"
 import cloudinary from "../lib/cloudinary.js";
 import {upsertStreamUser} from "../lib/stream.js"
 import { generateStreamToken } from "../lib/stream.js";
@@ -9,18 +10,14 @@ import crypto from 'crypto'
 await sodium.ready;
 
 
-const signupNonces = new Map();
 
 export const signupChallenge = async ( req, res, next ) => {
   try {
    
     const nonce = crypto.randomUUID();
     const nonceId = crypto.randomUUID();
-    signupNonces.set(nonceId,nonce);
-
-    
-    setTimeout(()=> signupNonces.delete(nonceId), 5*60*1000);
-    res.status(200).json({messaeg:"done",nonce,nonceId})
+    await redis.set(`signupNonce:${nonceId}`,nonce,"EX",5*60) //5 minutes expiry
+    res.status(200).json({message:"done",nonce,nonceId})
   } catch (error) {
     next(error)
   }
@@ -34,13 +31,11 @@ export const signup = async (req, res,next) => {
             return res.status(400).json({message: "All fields are required"});
         }
     
-        const nonce = signupNonces.get(nonceId)
+        const nonce = await redis.getdel(`signupNonce:${nonceId}`);//use get del to ensure nonce can be used only once
 
         if(!nonce){
           return res.status(400).json({message:"Nonce expired or invalid" });
         }
-
-        signupNonces.delete(nonceId)
 
         const pub = sodium.from_base64( publicKey, sodium.base64_variants.ORIGINAL);
         const sig = sodium.from_base64( signature, sodium.base64_variants.ORIGINAL);
@@ -172,7 +167,7 @@ export const updateProfile = async (req, res,next) => {
       }
   
       // Update user in the database
-      const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+      const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).select("-password -publicToken");
   
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
@@ -188,6 +183,8 @@ export const updateProfile = async (req, res,next) => {
       } catch (streamError) {
         console.log("Error updating Stream user during onboarding:", streamError.message);
       }
+
+      await redis.set(`user:${userId}`,JSON.stringify(updatedUser),"EX",60*60) //cache for 1 hour
 
       res.status(200).json(updatedUser);
     } catch (error) {
@@ -232,6 +229,8 @@ export const beAdmin = async(req,res,next)=>{
         user.isAdmin=true;
         await user.save();
 
+        await redis.set(`user:${user._id}`,JSON.stringify(user),"EX",60*60) //cache for 1 hour
+
         return res.status(200).json({ message: "User promoted to admin" });
     } catch (error) {
        next(error);
@@ -252,6 +251,8 @@ export const cancelAdmin = async(req,res,next)=>{
 
         user.isAdmin=false;
         await user.save();
+
+        await redis.set(`user:${user._id}`,JSON.stringify(user),"EX",60*60) //cache for 1 hour
 
         return res.status(200).json({ message: "User demoted to regular user" });
     } catch (error) {

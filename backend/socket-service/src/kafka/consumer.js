@@ -23,17 +23,18 @@ export const connectConsumer = async () => {
   await consumer.run({
     eachMessage: async ({ topic, message }) => {
       const event = JSON.parse(message.value.toString());
-
       if (topic == "friend-events"){
         const socketId=getReceiverSocketId(event.receiverId)
         switch (event.type) {
-            
-          case "friend-request-sent":           
-            io.to(socketId).emit("friend-request-received",event.sender);
+
+          case "friend-request-sent":
+            console.log("Friend request event received in socket service for receiverId:", event.receiverId);
+            io.to(socketId).emit("friend-request-received",{ sender:event.sender , request:event.request });
             break;
 
           case "friend-request-accepted":
-            io.to(socketId).emit("friend-request-accepted",event.acceptedBy);
+            console.log("Friend request accepted event received in socket service for receiverId:", event.receiverId);
+            io.to(socketId).emit("friend-request-accepted",{ acceptedBy: event.acceptedBy, requestId: event.requestId });
             break;
 
           default:
