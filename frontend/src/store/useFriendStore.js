@@ -11,7 +11,7 @@ export const useFriendStore = create((set, get) => ({
     friendRequestsFromMe: [],
     searchResults: [],
     clickedProfile: null,
-    notifications: [],
+    notifications: localStorage.getItem("notifications") ? JSON.parse(localStorage.getItem("notifications")) : [],
     isSendingRequest:false,
 
 
@@ -117,7 +117,7 @@ export const useFriendStore = create((set, get) => ({
             set({ isLoading: false})
         }
     },
-    setSocketListenerForNotifications: (method) => {
+    setSocketListenerForNotifications: () => {
         const socket = useAuthStore.getState().socket;
 
         if (!socket) return;
@@ -125,35 +125,36 @@ export const useFriendStore = create((set, get) => ({
         socket.off("friend-request-received");
         socket.off("friend-request-accepted");
 
-        switch (method) {
-            case "receiveRealTimeRequest":
+        socket.on("friend-request-received", ({ sender , request}) => {
+            const text = `You received a new friend request from ${sender.name}`;
+            toast.success(text);
+            set((state) => ({
+                friendRequestsToMe: [ ...(state.friendRequestsToMe || []), request ],
+                notifications: [...(state.notifications || []), { type: "friend_request", text }]
+            }));
+            localStorage.setItem("notifications", JSON.stringify(get().notifications));
+        });   
+        
+        
+        socket.on("friend-request-accepted", ({ acceptedBy, requestId }) => {
+            const text = `${acceptedBy.name} accepted your friend request`;
+            toast.success(text);
+            set((state) => ({
+                notifications: [...(state.notifications || []), { type: "friend_request_accepted", text }],
+                friendRequestsFromMe: (state.friendRequestsFromMe || []).filter(req => req._id !== requestId)
+            }));
+            localStorage.setItem("notifications", JSON.stringify(get().notifications));
+        });
 
-                socket.on("friend-request-received", ({ sender , request}) => {
-                    const text = `You received a new friend request from ${sender.name}`;
-                    toast.success(text);
-                    set((state) => ({
-                        friendRequestsToMe: [ ...(state.friendRequestsToMe || []), request ],
-                        notifications: [...(state.notifications || []), { type: "friend_request", text }]
-                    }));
-                });   
                 
-                
-                socket.on("friend-request-accepted", ({ acceptedBy, requestId }) => {
-                    const text = `${acceptedBy.name} accepted your friend request`;
-                    toast.success(text);
-                    set((state) => ({
-                        notifications: [...(state.notifications || []), { type: "friend_request_accepted", text }],
-                        friendRequestsFromMe: (state.friendRequestsFromMe || []).filter(req => req._id !== requestId)
-                    }));
-                });
-
-                break;
-            case "clearNotifications":
-                set({ notifications: [] });
-                break;
-            default:
-                console.log("No valid method provided for setting socket listeners");
-                break;
-        }
+    },
+    clearAllNotifications: () => {
+        set({ notifications: [] });
+        localStorage.removeItem("notifications");
+    },
+    clearNotification: (index) => {
+        const updated = get().notifications.filter((_, i) => i !== index);
+        set({ notifications: updated });
+        localStorage.setItem("notifications", JSON.stringify(updated));
     }
 }));

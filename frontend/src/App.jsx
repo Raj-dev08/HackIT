@@ -12,7 +12,8 @@ import HackathonMap from "./pages/HackathonMap"
 import UserProfile from "./pages/UserProfile"
 import FriendsList from "./pages/FriendList"
 import IncomingFriendRequests from "./pages/InComingFriendRequests"
-import OutgoingFriendRequests from "./pages/OutgoingFriendRequests";
+import OutgoingFriendRequests from "./pages/OutgoingFriendRequests"
+import Notifications from "./pages/Notifications";
 
 import { useAuthStore } from "./store/useAuthStore"
 import { useFriendStore } from "./store/useFriendStore";
@@ -38,7 +39,7 @@ function App() {
 
     if (authUser && !isSocketSetUp ) {
       setIsSocketSetup(true)
-      setSocketListenerForNotifications("receiveRealTimeRequest");
+      setSocketListenerForNotifications();
     }
 
 
@@ -57,6 +58,7 @@ function App() {
             <Route path="/friends" element={authUser?<FriendsList/>:<Navigate to="/login"/>}/>
             <Route path="/incoming-friend-requests" element={authUser?<IncomingFriendRequests/>:<Navigate to="/login"/>}/>
             <Route path="/outgoing-friend-requests" element={authUser?<OutgoingFriendRequests/>:<Navigate to="/login"/>}/>
+            <Route path="/notifications" element={authUser?<Notifications/>:<Navigate to="/login"/>}/>
         </Routes>
     </div>
   )
