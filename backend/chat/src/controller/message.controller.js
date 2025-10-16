@@ -17,7 +17,7 @@ export const clearMessageCache = async (userId, receiverId) => {
 export const sendMsg = async (req, res, next) => {
   try {
     const { user } = req;
-    const { text, image } = req.body;
+    const { text, image , senderText } = req.body;
     const receiverId = req.params.id;
 
     if (!receiverId || (!text && !image)) {
@@ -31,10 +31,11 @@ export const sendMsg = async (req, res, next) => {
       sender:user,
       receiverId,
       text,
+      textForSender: senderText,
       image
     })
 
-    return res.status(202).json({state:"queued",tempId,previewMsg:{text,image}});//sending the image so that u can give a default image by checking if image exists or not until it stores
+    return res.status(202).json({state:"queued",tempId,previewMsg:{ text, image, senderText }});//sending the image so that u can give a default image by checking if image exists or not until it stores
   } catch (error) {
     next(error);
   }
@@ -50,22 +51,10 @@ export const getMessages = async (req, res, next) => {
         const cacheKey = `messages:${user._id}:${receiverId}:${limit}:${before}`;
         const cachedMessages = await redis.get(cacheKey);
 
-        let receiverPublicKey = JSON.parse(await redis.get(`publicKey:${receiverId}`));
-
-        if (!receiverPublicKey){
-          const receiver = await User.findById(receiverId).select("publicToken");
-          if(!receiver || !receiver.publicToken){
-            return res.status(404).json({message: "Receiver public key not found"});
-          }
-
-          receiverPublicKey = receiver.publicToken;//always a string
-          await redis.set( `publicKey:${receiverId}`, receiverPublicKey, "EX", 7*24*60*60);//cache for 7 days
-        }
-
         if (cachedMessages) {
             const parsedMessages = JSON.parse(cachedMessages);
             const {messages, hasMore} = parsedMessages;
-            return res.status(200).json({ messages, hasMore , receiverPublicKey});
+            return res.status(200).json({ messages, hasMore });
         }
 
         const query = {
@@ -99,7 +88,7 @@ export const getMessages = async (req, res, next) => {
 
         await redis.set(cacheKey, JSON.stringify(cacheData), "EX", 60 * 60); // Cache for 1 hour
 
-        return res.status(200).json({ messages, hasMore , receiverPublicKey });
+        return res.status(200).json({ messages, hasMore  });
     } catch (error) {
         next(error);
     }
@@ -148,7 +137,7 @@ export const editMessage = async (req, res, next) => {
     try {
         const { user } = req;
         const messageId = req.params.id;
-        const { text, image } = req.body;
+        const { text, image , senderMessage} = req.body;
 
         // console.log(req.body)
 
@@ -164,10 +153,11 @@ export const editMessage = async (req, res, next) => {
           messageId,
           senderId:user._id,
           text,
+          textForSender: senderMessage,
           image
         })
 
-        return res.status(202).json({ state: "edit-queued", messageId });
+        return res.status(202).json({ state: "queued", messageId });
     } catch (error) {
         next(error);
     }

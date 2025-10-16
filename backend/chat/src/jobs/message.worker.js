@@ -2,14 +2,17 @@ import { Worker } from "bullmq";
 import { redis } from "../lib/redis.js";
 import cloudinary from "../lib/cloudinary.js";
 import Message from "../model/message.model.js";
-import { sendMessage } from "../kafka/producer.js";
 import { clearMessageCache } from "../controller/message.controller.js";
+import { connectDB } from "../lib/db.js";
+import { initProducer , sendMessage } from "../kafka/producer.js";
 
+await connectDB();
+await initProducer();
 
 const meetingWorker = new Worker("message-queue", async (job) => {
     switch (job.name) {
         case "saveMessage": {
-            const { tempId , sender , receiverId , text , image} = job.data
+            const { tempId , sender , receiverId , text , image , textForSender } = job.data
 
             let imageUrl;
 
@@ -19,10 +22,11 @@ const meetingWorker = new Worker("message-queue", async (job) => {
             }
 
             const message = new Message({
-            senderId: sender._id,
-            receiverId,
-            text,
-            image: imageUrl,
+                senderId: sender._id,
+                receiverId,
+                text,
+                textForSender,
+                image: imageUrl,
             });
 
             await message.save();
@@ -41,7 +45,7 @@ const meetingWorker = new Worker("message-queue", async (job) => {
         }
         
         case "editMessage": {
-            const { messageId, senderId, text, image } = job.data;
+            const { messageId, senderId, text, image , textForSender} = job.data;
 
             const message = await Message.findById(messageId);
 
@@ -56,6 +60,7 @@ const meetingWorker = new Worker("message-queue", async (job) => {
 
             if (text){
                 message.text = text;
+                message.textForSender = textForSender //guarenteed if the text changes
             }
             if (image?.trim()) {
                 const uploaded = await cloudinary.uploader.upload(image);

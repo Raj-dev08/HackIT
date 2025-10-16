@@ -36,7 +36,7 @@ export const getAllFriends = async (req, res,next) => {
             return res.status(200).json({friends: cachedFriends , unreadCounts:userUnseenMap});
         }
 
-        const userAcc= await User.findById(user._id).populate("friends", "name profilePic email description friends");
+        const userAcc= await User.findById(user._id).populate("friends", "name profilePic email description friends publicToken");
 
         if(userAcc.friends.length === 0) {
             return res.status(200).json({message: "No friends found"});

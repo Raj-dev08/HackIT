@@ -29,6 +29,8 @@ const FriendsList = () => {
 
   const displayList = searchTerm.trim() ? searchResults : friends;
 
+  console.log(displayList)
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300 p-6 flex flex-col items-center overflow-hidden">

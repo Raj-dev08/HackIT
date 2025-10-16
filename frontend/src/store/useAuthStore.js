@@ -38,20 +38,15 @@ export const useAuthStore = create((set, get) => ({
       const challengeRes=await axiosInstance.get("/auth/api/signup-challenge");
       const {nonce,nonceId}=challengeRes.data;
 
-      const keyPair = sodium.crypto_sign_keypair();
+      const keyPair = sodium.crypto_box_keypair();
       const publicKey = sodium.to_base64(keyPair.publicKey, sodium.base64_variants.ORIGINAL);
       const privateKey = sodium.to_base64(keyPair.privateKey, sodium.base64_variants.ORIGINAL);
 
-      const signature = sodium.crypto_sign_detached(
-        sodium.from_string(nonce),
-        keyPair.privateKey
-      );
-      const signatureBase64 = sodium.to_base64(signature, sodium.base64_variants.ORIGINAL);
+
 
       const payload = {
         ...data,
         publicKey,
-        signature: signatureBase64,
         nonceId,
       };
 

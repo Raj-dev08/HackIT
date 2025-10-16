@@ -24,10 +24,10 @@ export const signupChallenge = async ( req, res, next ) => {
 }
 
 export const signup = async (req, res,next) => {
-    const { name, email, password, publicKey, signature, nonceId} = req.body;
+    const { name, email, password, publicKey, nonceId} = req.body;
     // console.log(req.body)
     try {
-        if(!name || !email  || !password || !publicKey|| !signature|| !nonceId){
+        if(!name || !email  || !password || !publicKey|| !nonceId){
             return res.status(400).json({message: "All fields are required"});
         }
     
@@ -38,12 +38,6 @@ export const signup = async (req, res,next) => {
         }
 
         const pub = sodium.from_base64( publicKey, sodium.base64_variants.ORIGINAL);
-        const sig = sodium.from_base64( signature, sodium.base64_variants.ORIGINAL);
-        const ok = sodium.crypto_sign_verify_detached(sig,sodium.from_string(nonce),pub);//verify all the signautre,nonce using the publickey
-        if(!ok){
-          return res.status(400).json({message:"Invalid signature proof"});
-        }
-
         if(password.length < 4){
             return res.status(400).json({message: "Password must be atleast 4 characters long"});
         }

@@ -56,9 +56,10 @@ export const connectConsumer = async () => {
             });//send the message to the receiver
 
             io.to(senderSocketId).emit("message_sent",{
+              receiverId:event.receiverId,
               tempId:event.tempId,
               realId:event.message._id,
-              state:"sent"
+              stateOfMsg:"sent"
             })//update the status of message in the sender
 
             break;
@@ -74,7 +75,7 @@ export const connectConsumer = async () => {
 
             io.to(senderSocketId).emit("message_edited_successfully",{
               message:event.message,
-              state:"edited"
+              stateOfMsg:"edited"
             })
             break;
           default:

@@ -20,12 +20,12 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-app.use(compression({
-  filter: (req, res) => {
-    const contentType = res.getHeader('Content-Type') || '';
-    return /json|text|javascript|css|html/.test(contentType);
-  }
-}));
+// app.use(compression({
+//   filter: (req, res) => {
+//     const contentType = res.getHeader('Content-Type') || '';
+//     return /json|text|javascript|css|html/.test(contentType);
+//   }
+// }));
 
 app.use(serviceHandler);
 

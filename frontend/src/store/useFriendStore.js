@@ -156,5 +156,27 @@ export const useFriendStore = create((set, get) => ({
         const updated = get().notifications.filter((_, i) => i !== index);
         set({ notifications: updated });
         localStorage.setItem("notifications", JSON.stringify(updated));
-    }
+    },
+    incrementUnreadCount: (Id) => {
+        set((state) => ({
+            userUnseenMap: {
+                ...state.userUnseenMap,
+                [Id]: (state.userUnseenMap[Id] || 0) + 1
+            }
+        }));
+    },
+    resetUnreadCount: (Id) => {
+        set((state) => ({
+            userUnseenMap: {
+                ...state.userUnseenMap,
+                [Id]: 0
+            }
+        }));
+    },
+    addNotification: (notification) => {
+        set((state) => ({
+            notifications: [...(state.notifications || []), notification]
+        }));
+        localStorage.setItem("notifications", JSON.stringify(get().notifications));
+    },
 }));
