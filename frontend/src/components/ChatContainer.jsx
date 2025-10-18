@@ -88,7 +88,6 @@ const ChatContainer = () => {
 
     decryptAll();
     
-  console.log(messages)
   }, [messages, authUser._id, selectedUser]);
 
   useEffect(() => {
@@ -146,8 +145,8 @@ const ChatContainer = () => {
         {decryptedMessages.map((msg) => {
           const isMine = msg.senderId === authUser._id;
           return (
-            <div key={msg._id} className={`chat ${isMine ? "chat-end" : "chat-start"}`}>
-              <div className={`chat-bubble relative ${msg.isEdited ? "border border-primary/25 rounded" : ""}`}>
+            <div key={msg._id} className={`chat ${isMine ? "chat-end" : "chat-start"} ${editedMessage?._id == msg?._id ? "border border-primary/25 rounded" : ""}`}>
+              <div className="chat-bubble relative ">
                 <div className="flex justify-between mb-1 relative">
 
                  
