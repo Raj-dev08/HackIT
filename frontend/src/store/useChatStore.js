@@ -139,6 +139,7 @@ export const useChatStore = create((set, get) => ({
         socket.off("message_sent")
         socket.off("message_edited_successfully")
         socket.off("message_seen_byReceiever")
+        socket.off("message-edit-failed")
 
 
         const friendStore = useFriendStore.getState();
@@ -155,6 +156,7 @@ export const useChatStore = create((set, get) => ({
                 };
                 friendStore.addNotification(notification);
                 friendStore.incrementUnreadCount(sender._id);
+                toast.success(notification.text)//using toast for easy notifications
                 return;
             }
 
@@ -168,7 +170,7 @@ export const useChatStore = create((set, get) => ({
         });
 
         //message sent confirmation
-        socket.on("message_sent",({ receiverId, tempId, realId, stateOfMsg }) => {
+        socket.on("message_sent",({ receiverId, tempId, message, stateOfMsg }) => {
             const { selectedUser } = get();
 
             if (!selectedUser) return;
@@ -177,7 +179,7 @@ export const useChatStore = create((set, get) => ({
 
             set((state) => ({
                 messages: state.messages.map((m) =>
-                    m._id === tempId ? { ...m, _id: realId, isTemp:false, status:stateOfMsg } : m
+                    m._id === tempId ? { ...message , status:stateOfMsg } : m
                 ),
             }));
         });
@@ -187,6 +189,7 @@ export const useChatStore = create((set, get) => ({
             const { selectedUser } = get();
 
             if ( message.receiverId !== selectedUser._id ) return;
+
 
             set((state) => ({
                 messages: state.messages.map((m) => 
@@ -205,7 +208,7 @@ export const useChatStore = create((set, get) => ({
         });
 
         //message edit confirmed by server
-        socket.on("message_edited_successfully", ({ message, stateOfMsg }) => {
+        socket.on("message_edited_successfully", ( message ) => {
             const { selectedUser } = get();
 
             if (!selectedUser) return;
@@ -224,7 +227,17 @@ export const useChatStore = create((set, get) => ({
                 messages: state.messages.filter((m) => m._id !== messageId),
             }));
         });
-    }, //TO-DO make the notifications 
+
+
+        socket.on("message-edit-failed",({message,info}) => {
+             set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === message._id ? { ...message, status:null } : m
+                ),
+            }));
+            toast.error(info)
+        })
+    },
     setTypingIndicator: () => {
         const socket = useAuthStore.getState().socket;
         const { selectedUser } = get();

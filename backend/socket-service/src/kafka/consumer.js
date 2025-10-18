@@ -58,7 +58,7 @@ export const connectConsumer = async () => {
             io.to(senderSocketId).emit("message_sent",{
               receiverId:event.receiverId,
               tempId:event.tempId,
-              realId:event.message._id,
+              message:event.message,
               stateOfMsg:"sent"
             })//update the status of message in the sender
 
@@ -73,10 +73,13 @@ export const connectConsumer = async () => {
 
             io.to(socketId).emit("message_edited",event.message)
 
-            io.to(senderSocketId).emit("message_edited_successfully",{
-              message:event.message,
-              stateOfMsg:"edited"
-            })
+            io.to(senderSocketId).emit("message_edited_successfully",event.message)
+            
+            break;
+
+          case "edit-error":
+            io.to(socketId).emit("message-edit-failed",{ message : event.message , info: event.info})
+
             break;
           default:
             console.log("Unknown event type:", event.type);

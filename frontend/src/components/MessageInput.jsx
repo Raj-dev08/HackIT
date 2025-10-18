@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
-import { Image, Send, X } from "lucide-react";
+import { Image, Send, X , CornerUpLeft } from "lucide-react";
 import { encryptMessage } from "../lib/messageEncryption";
 import toast from "react-hot-toast";
 
-const MessageInput = () => {
+const MessageInput = ({ repliedTo , clearReply }) => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
+  const inputRef = useRef(null)
 
   const { sendMessage, isSendingMessages, selectedUser } = useChatStore();
   const { socket, authUser, checkAuth } = useAuthStore();
@@ -19,6 +20,12 @@ const MessageInput = () => {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(()=>{
+    if(repliedTo){
+      inputRef.current.focus()
+    }
+  },[repliedTo])
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -56,7 +63,14 @@ const MessageInput = () => {
         senderId:authUser._id,
         receiverPublicB64:userPublicKey
       })
-      await sendMessage({ text:encryptedText, senderText: encryptedTextForUser , image: imagePreview });
+      if(repliedTo){
+        await sendMessage({ text:encryptedText, senderText: encryptedTextForUser , image: imagePreview ,repliedTo: repliedTo._id });
+        clearReply();
+      }
+      else{
+        await sendMessage({ text:encryptedText, senderText: encryptedTextForUser , image: imagePreview });
+      }
+     
       setText("");
       removeImage();
     } catch (error) {
@@ -80,6 +94,25 @@ const MessageInput = () => {
 
   return (
     <div className="p-4 w-full">
+      {repliedTo  && (
+        <div className="mb-3 flex items-center justify-between bg-base-200 border-l-4 border-primary px-3 py-2 rounded-md">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <CornerUpLeft size={16} className="text-primary" />
+            <div className="flex flex-col">
+              <p className="text-xs text-gray-500">Replying to</p>
+              <p className="text-sm font-medium truncate max-w-[220px]">
+                {repliedTo.displayText || "[Encrypted message]"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={clearReply}
+            className="hover:bg-base-300 p-1 rounded-full transition"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
@@ -106,6 +139,7 @@ const MessageInput = () => {
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
+            ref={inputRef}
             onChange={(e) => {
               setText(e.target.value);
               sendToggle();

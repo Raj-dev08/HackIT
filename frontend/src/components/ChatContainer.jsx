@@ -31,6 +31,7 @@ const ChatContainer = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedMessage, setEditedMessage] = useState(null);
   const [decryptedMessages, setDecryptedMessages] = useState([]);
+  const [ repliedTo , setRepliedTo ] = useState(null)
 
 
   useEffect(() => {
@@ -40,6 +41,7 @@ const ChatContainer = () => {
         const results = await Promise.all(
         messages.map(async (msg) => {
         let encrypted, receiverId, senderPublicB64;
+        let repliedText = null ;
         
 
         if (msg.senderId === authUser._id) {
@@ -52,9 +54,28 @@ const ChatContainer = () => {
             senderPublicB64 = selectedUser.publicToken ;
         }
 
+        if (msg.repliedTo){
+          let encrypted, receiverId, senderPublicB64;
+          
+          if (msg.repliedTo.senderId === authUser._id) {
+              encrypted = msg.repliedTo.textForSender;
+              receiverId = authUser._id;
+              senderPublicB64 =  localStorage.getItem(`${authUser._id}:publicKey`) ;
+          } else {
+              encrypted = msg.repliedTo.text;
+              receiverId = authUser._id;
+              senderPublicB64 = selectedUser.publicToken ;
+          }
+          try {
+            repliedText = await decryptMessage({ encrypted, senderPublicB64, receiverId })
+          } catch (error) {
+            repliedText = "[Could Not decrypt]"
+          }
+        }
+
         try {
             const text = await decryptMessage({ encrypted, senderPublicB64, receiverId });
-            return { ...msg, displayText: text };
+            return { ...msg, displayText: text , repliedText};
         } catch {
             return { ...msg, displayText: "[Could not decrypt]" };
         }
@@ -69,7 +90,6 @@ const ChatContainer = () => {
     
   console.log(messages)
   }, [messages, authUser._id, selectedUser]);
-
 
   useEffect(() => {
     if (!selectedUser) return;
@@ -101,10 +121,11 @@ const ChatContainer = () => {
     }
   };
 
-  useEffect(() => {
-    if (!containerRef.current || isMessagesLoading) return;
-    containerRef.current.scrollTop = containerRef.current.scrollHeight;
-  }, [decryptedMessages.length, typingUsers.length, isMessagesLoading]);
+ useEffect(() => {
+  if (!containerRef.current || isMessagesLoading) return;
+  containerRef.current.scrollTop = containerRef.current.scrollHeight;
+}, [decryptedMessages.length, typingUsers.length ]);
+
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -124,14 +145,44 @@ const ChatContainer = () => {
 
         {decryptedMessages.map((msg) => {
           const isMine = msg.senderId === authUser._id;
-          const authorName = isMine ? "You" : selectedUser?.name || "Unknown";
           return (
             <div key={msg._id} className={`chat ${isMine ? "chat-end" : "chat-start"}`}>
-              <div className={`chat-bubble max-w-[60%] relative ${msg.isEdited ? "border border-primary/25 rounded" : ""}`}>
-                <div className="flex justify-between mb-1">
-                  <p className="text-sm font-bold text-red-600">{authorName}</p>
+              <div className={`chat-bubble relative ${msg.isEdited ? "border border-primary/25 rounded" : ""}`}>
+                <div className="flex justify-between mb-1 relative">
 
-                  {msg.isEdited && <p className="text-xs text-gray-500 mx-2">(Edited)</p>}
+                 
+
+
+                   { msg.repliedTo && (
+                    <div className="bg-base-200 rounded px-2 p-1 text-xs md:text-sm border-l-4 border-primary w-full ">
+                      <p className="truncate opacity-80 text-red-600 underline">
+                        {msg.repliedTo.senderId === authUser._id ? authUser.name : selectedUser.name} 
+                      </p>
+                      <p className="truncate opacity-80">
+                        {msg.repliedText} 
+                      </p>
+                    </div>
+                  )}
+
+                  { !msg.repliedTo && ( 
+                    <div className="flex justify-between mt-1 gap-3 flex-col md:flex-row">
+                      <div>
+                        <p className="text-sm md:text-base font-semibold">{msg.displayText}</p>
+                      </div>
+
+                      <div className="flex justify-center items-center">
+                        {msg.isEdited && <p className="text-xs text-gray-500 mx-2">(Edited)</p>}
+                        <p className="text-xs opacity-50">{new Date(msg.createdAt).toLocaleTimeString().slice(0, 5)}</p>
+                        <p>
+                          { msg?.status === "queued" ? <RefreshCcw className={`size-4 ${isMine ? "" : "hidden"} `}/> :
+                              <CheckCheck className={`size-4 ${isMine ? "" : "hidden"} ${msg.isSeen ? "text-blue-500" : "text-gray-400"}`} />
+
+                          }
+                          
+                        </p>
+                    </div>
+                    </div>
+                  )}
 
                   {( isMine && !msg.isTemp ) && (
                     <Popover className="relative">
@@ -142,6 +193,15 @@ const ChatContainer = () => {
                       </Popover.Button>
 
                       <Popover.Panel className="absolute right-0 mt-1 w-28 z-50 bg-base-100 border rounded-md shadow-md p-1 text-sm">
+                         <button
+                          onClick={() => {
+                            setRepliedTo(msg)
+                          }}
+                          className="block w-full text-left px-2 py-1 hover:bg-base-300 rounded"
+                        >
+                          ◀ Reply
+                        </button>
+
                         <button
                           onClick={() => {
                             setIsEditing(true);
@@ -161,24 +221,55 @@ const ChatContainer = () => {
                       </Popover.Panel>
                     </Popover>
                   )}
-                </div>
+                  { ! isMine   && (
+                    <Popover className="relative">
+                      <Popover.Button className="p-1 hover:bg-base-200 rounded">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 8a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                        </svg>
+                      </Popover.Button>
 
-                <p className="text-sm font-semibold">{msg.displayText}</p>
+                      <Popover.Panel className="absolute left-0 mt-1 w-28 z-50 bg-base-100 border rounded-md shadow-md p-1 text-sm">
+                        <button
+                          onClick={() => {
+                            setRepliedTo(msg)
+                          }}
+                          className="block w-full text-left px-2 py-1 hover:bg-base-300 rounded"
+                        >
+                          ◀ Reply
+                        </button>
+                      </Popover.Panel>
+                    </Popover>
+                  )}
+
+                </div>
+               
+
+                
 
                 {msg.image && (
-                  <img src={msg.image} alt="Attachment" className="max-w-[200px] rounded-md mt-2" />
+                  <img src={msg.image} alt="Attachment" className="max-w-[100px] rounded-md mt-2" />
                 )}
 
-                <div className="flex justify-between mt-1 text-xs opacity-50">
-                  <p>
-                    { msg?.status === "queued" ? <RefreshCcw className={`size-4 ${isMine ? "" : "hidden"} `}/> :
-                        <CheckCheck className={`size-4 ${isMine ? "" : "hidden"} ${msg.isSeen ? "text-blue-500" : "text-gray-400"}`} />
+                { msg.repliedTo && (
+                  <div className="flex justify-between mt-1 gap-3 flex-col md:flex-row">
+                  <div>
+                    <p className="text-sm md:text-base font-semibold">{msg.displayText}</p>
+                  </div>
 
-                    }
-                    
-                  </p>
-                  <p>{new Date(msg.createdAt).toLocaleTimeString().slice(0, 5)}</p>
+                  <div className="flex justify-center items-center">
+                    {msg.isEdited && <p className="text-xs text-gray-500 mx-2">(Edited)</p>}
+                    <p className="text-xs opacity-50">{new Date(msg.createdAt).toLocaleTimeString().slice(0, 5)}</p>
+                    <p>
+                      { msg?.status === "queued" ? <RefreshCcw className={`size-4 ${isMine ? "" : "hidden"} `}/> :
+                          <CheckCheck className={`size-4 ${isMine ? "" : "hidden"} ${msg.isSeen ? "text-blue-500" : "text-gray-400"}`} />
+
+                      }
+                      
+                    </p>
+                 </div>
                 </div>
+                )}
               </div>
             </div>
           );
@@ -208,9 +299,12 @@ const ChatContainer = () => {
       setIsEditing={setIsEditing} 
       authUser={authUser} 
       selectedUser={selectedUser}/> : 
-      <MessageInput />
+      repliedTo ? (         
+        <MessageInput repliedTo={repliedTo} clearReply={() => setRepliedTo(null) }/>
+      ):(
+        <MessageInput/>
+      )   
       }
-      
     </div>
   );
 };

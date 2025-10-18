@@ -30,7 +30,8 @@ const messageSchema = new mongoose.Schema(
       default: false,
     },
     repliedTo:{
-      type: mongoose.Schema.Types.ObjectId
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message"
     }
   },
   { timestamps: true }

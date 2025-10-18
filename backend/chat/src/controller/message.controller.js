@@ -1,5 +1,4 @@
 import Message from "../model/message.model.js";
-import User from "../model/user.model.js";
 import { redis } from "../lib/redis.js";
 
 import { sendMessage } from "../kafka/producer.js";
@@ -17,7 +16,7 @@ export const clearMessageCache = async (userId, receiverId) => {
 export const sendMsg = async (req, res, next) => {
   try {
     const { user } = req;
-    const { text, image , senderText } = req.body;
+    const { text, image , senderText , repliedTo } = req.body;
     const receiverId = req.params.id;
 
     if (!receiverId || (!text && !image)) {
@@ -32,7 +31,8 @@ export const sendMsg = async (req, res, next) => {
       receiverId,
       text,
       textForSender: senderText,
-      image
+      image,
+      repliedTo
     })
 
     return res.status(202).json({state:"queued",tempId,previewMsg:{ text, image, senderText }});//sending the image so that u can give a default image by checking if image exists or not until it stores
@@ -71,6 +71,7 @@ export const getMessages = async (req, res, next) => {
         const messages = await Message.find(query)
             .sort({ createdAt: -1 })
             .limit(limit)
+            .populate("repliedTo" , "text image textForSender senderId")
 
         messages.reverse(); // To return the oldest messages first
 

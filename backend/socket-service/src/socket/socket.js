@@ -59,7 +59,9 @@ io.on("connection", (socket) => {
             message._id,
             { isSeen: true },
             { new: true }
-        );
+        )
+        .populate("repliedTo" , "text image textForSender senderId")
+        .lean();//turning into js object so socket doesnt serialize 
 
         socket.to(roomId).emit("message_seen_byReceiever", { message: updatedMessage})
     })

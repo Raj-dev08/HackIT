@@ -12,7 +12,7 @@ await initProducer();
 const meetingWorker = new Worker("message-queue", async (job) => {
     switch (job.name) {
         case "saveMessage": {
-            const { tempId , sender , receiverId , text , image , textForSender } = job.data
+            const { tempId , sender , receiverId , text , image , textForSender , repliedTo} = job.data
 
             let imageUrl;
 
@@ -27,9 +27,11 @@ const meetingWorker = new Worker("message-queue", async (job) => {
                 text,
                 textForSender,
                 image: imageUrl,
+                repliedTo
             });
 
             await message.save();
+            await message.populate("repliedTo" , "text image textForSender senderId")
 
             await clearMessageCache(sender._id, receiverId);
             await clearMessageCache(receiverId, sender._id);
@@ -47,15 +49,37 @@ const meetingWorker = new Worker("message-queue", async (job) => {
         case "editMessage": {
             const { messageId, senderId, text, image , textForSender} = job.data;
 
-            const message = await Message.findById(messageId);
+            const message = await Message.findById(messageId).populate("repliedTo" , "text image textForSender senderId");
 
-            if (!message) throw new Error("Message not found");
+            if (!message) {
+                await sendMessage({
+                    type: "edit-error",
+                    info: "Message not found",
+                    receiverId:senderId,
+                    message
+                });
+                return ;
+            };
 
-            if (message.senderId.toString() !== senderId.toString()) throw new Error("Unauthorized edit");
+            if (message.senderId.toString() !== senderId.toString()) {
+                  await sendMessage({
+                    type: "edit-error",
+                    info: "Unauthorized edit",
+                    receiverId:senderId,
+                    message
+                });
+                return ;
+            };
 
             // Only allow edits within 15 mins
             if (message.createdAt.getTime() < Date.now() - 15 * 60 * 1000) {
-                throw new Error("Edit time window expired");
+                  await sendMessage({
+                    type: "edit-error",
+                    info: "Edit window expired",
+                    receiverId:senderId,
+                    message
+                });
+                return ;
             }
 
             if (text){

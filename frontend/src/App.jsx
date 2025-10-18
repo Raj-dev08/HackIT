@@ -17,7 +17,8 @@ import Notifications from "./pages/Notifications"
 import MessagePage from "./pages/MessagePage";
 
 import { useAuthStore } from "./store/useAuthStore"
-import { useFriendStore } from "./store/useFriendStore";
+import { useFriendStore } from "./store/useFriendStore"
+import { useChatStore } from "./store/useChatStore";
 
 import { Toaster } from "react-hot-toast"
 import { Loader } from "lucide-react"
@@ -25,6 +26,7 @@ import { Loader } from "lucide-react"
 function App() {
   const { authUser, isCheckingAuth ,checkAuth} = useAuthStore();
   const { setSocketListenerForNotifications } = useFriendStore();
+  const { subscribeToMessageEvents } = useChatStore();
   const [ isSocketSetUp , setIsSocketSetup ] = useState(false)
 
   useEffect(() => {
@@ -40,7 +42,8 @@ function App() {
 
     if (authUser && !isSocketSetUp ) {
       setIsSocketSetup(true)
-      setSocketListenerForNotifications();
+      setSocketListenerForNotifications()
+      subscribeToMessageEvents()
     }
 
 
