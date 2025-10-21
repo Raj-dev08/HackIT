@@ -57,15 +57,15 @@ HackIT isn’t just a chat app—it’s a **platform designed to help developers
 
 | Chat | Mobile View |
 |------|------------|
-| ![Chat](public/chat.png) | ![Mobile](public/mobile.png) |
+| ![Chat](frontend/public/chat.png) | ![Mobile](frontend/public/mobile.png) |
 
 | Notifications | PC Chat |
 |---------------|---------|
-| ![Notifications](public/notifications.png) | ![PC Chat](public/pcChat.png) |
+| ![Notifications](frontend/public/notifications.png) | ![PC Chat](frontend/public/pcChat.png) |
 
 | Profile | Settings |
 |---------|---------|
-| ![Profile](public/profile.png) | ![Settings](public/settings.png) |
+| ![Profile](frontend/public/profile.png) | ![Settings](frontend/public/settings.png) |
 
 ---
 
