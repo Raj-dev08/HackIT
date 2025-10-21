@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"nodemon src/server.js\" \"nodemon src/jobs/message.worker.js\"",
-    "start": "node src/server.js & node src/jobs/meeting.worker.js"
+    "start": "node src/server.js & node src/jobs/message.worker.js"
   },
   "keywords": [],
   "author": "",

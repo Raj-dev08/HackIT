@@ -12,9 +12,20 @@ const kafka = new Kafka({
 
 const producer = kafka.producer()
 
+const wait = (ms) => new Promise(res => setTimeout(res, ms))
+
 export const initProducer = async () => {
-    await producer.connect()
-    console.log("Kafka producer connected")
+    let connected = false
+    while (!connected) {
+        try {
+            await producer.connect()
+            connected = true
+            console.log("Kafka producer connected")
+        } catch (err) {
+            console.log("Kafka not ready, retrying in 5s...")
+            await wait(5000)
+        }
+    }
 }
 
 export const sendMessage = async (event) => {

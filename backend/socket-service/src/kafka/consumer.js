@@ -13,10 +13,22 @@ const kafka = new Kafka({
 
 const consumer = kafka.consumer({ groupId: "socket-service-group" });
 
-export const connectConsumer = async () => {
-  await consumer.connect();
-  console.log("Socket Service Kafka Consumer connected");
+const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
+export const connectConsumer = async () => {
+  let connected = false;
+
+  while (!connected) {
+    try {
+      await consumer.connect();
+      connected = true;
+      console.log("Socket Service Kafka Consumer connected");
+    } catch (err) {
+      console.log("Kafka not ready, retrying in 5s...");
+      await wait(5000);
+    }
+  }
+  
   await consumer.subscribe({ topic: "friend-events", fromBeginning: true });
   await consumer.subscribe({ topic: "message-events", fromBeginning: true });
 

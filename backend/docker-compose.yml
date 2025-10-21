@@ -17,7 +17,48 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
     depends_on:
       - zookeeper
+  api-endpoint:
+    build: ./api-endpoint
+    env_file: ./api-endpoint/.env
+    ports:
+      - "3000:3000"
+
+  auth:
+    build: ./auth
+    env_file: ./auth/.env
+    ports:
+      - "3001:3001"
+
+  services:
+    build: ./services
+    env_file: ./services/.env
+    ports:
+      - "3002:3002"
+
+  friend:
+    build: ./friend
+    env_file: ./friend/.env
+    ports:
+      - "3003:3003"
+    depends_on:
+      - kafka
+
+  chat:
+    build: ./chat
+    env_file: ./chat/.env
+    ports:
+      - "3004:3004"
+    depends_on:
+      - kafka
+
+  socket-service:
+    build: ./socket-service
+    env_file: ./socket-service/.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      - kafka
