@@ -7,6 +7,8 @@ import { useAuthStore } from "../store/useAuthStore";
 import EditMessage from "./EditMessage";
 import { Popover } from "@headlessui/react";
 import { decryptMessage } from "../lib/messageEncryption";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 const SCROLL_THRESHOLD = 100;
 
@@ -32,6 +34,8 @@ const ChatContainer = () => {
   const [editedMessage, setEditedMessage] = useState(null);
   const [decryptedMessages, setDecryptedMessages] = useState([]);
   const [ repliedTo , setRepliedTo ] = useState(null)
+
+  const isUserNearBottom = useRef(true);
 
 
   useEffect(() => {
@@ -108,22 +112,42 @@ const ChatContainer = () => {
   }, [messages.length]);
 
   const handleScroll = async () => {
-    if (!containerRef.current || isMessagesLoading) return;
-    const scrollTop = containerRef.current.scrollTop;
+    const container = containerRef.current;
+    if (!container || isMessagesLoading || !selectedUser) return
+
+    const scrollTop = container.scrollTop;
+
+    const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+
+    isUserNearBottom.current = nearBottom;
+
     if (scrollTop < SCROLL_THRESHOLD && hasMoreMessages) {
       const oldest = messages[0];
       const before = oldest?.createdAt;
-      const oldHeight = containerRef.current.scrollHeight;
+      const oldHeight = container.scrollHeight;
+
       await getMessages(selectedUser._id, limit, before);
-      const newHeight = containerRef.current.scrollHeight;
-      containerRef.current.scrollTop = newHeight - oldHeight + scrollTop;
+
+      const newHeight = container.scrollHeight;
+      container.scrollTop = newHeight - oldHeight + scrollTop;
     }
   };
 
- useEffect(() => {
-  if (!containerRef.current || isMessagesLoading) return;
-  containerRef.current.scrollTop = containerRef.current.scrollHeight;
-}, [decryptedMessages.length, typingUsers.length ]);
+   useEffect(() => {
+    const container = containerRef.current;
+    if (!container || isMessagesLoading) return;
+
+    if (isUserNearBottom.current) {
+      requestAnimationFrame(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        });
+      });
+    }
+  }, [decryptedMessages.length, typingUsers.length]);
+
+
 
 
   return (
@@ -134,7 +158,7 @@ const ChatContainer = () => {
         ref={containerRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 space-y-4"
-        style={{ scrollbarWidth: "thin" }}
+        style={{ scrollbarWidth: "thin" , scrollBehavior: "smooth"}}
       >
         {isMessagesLoading && (
           <div className="text-center py-2 text-sm opacity-70">
@@ -142,10 +166,17 @@ const ChatContainer = () => {
           </div>
         )}
 
+        <AnimatePresence>
         {decryptedMessages.map((msg) => {
           const isMine = msg.senderId === authUser._id;
           return (
-            <div key={msg._id} className={`chat ${isMine ? "chat-end" : "chat-start"} ${editedMessage?._id == msg?._id ? "border border-primary/25 rounded" : ""}`}>
+            <motion.div 
+            key={msg._id} 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className={`chat ${isMine ? "chat-end" : "chat-start"} ${editedMessage?._id == msg?._id ? "border border-primary/25 rounded" : ""}`}>
               <div className="chat-bubble relative ">
                 <div className="flex justify-between mb-1 relative">
 
@@ -157,7 +188,7 @@ const ChatContainer = () => {
                       <p className="truncate opacity-80 text-red-600 underline">
                         {msg.repliedTo.senderId === authUser._id ? authUser.name : selectedUser.name} 
                       </p>
-                      <p className="truncate opacity-80">
+                      <p className="truncate opacity-80 text-base-content">
                         {msg.repliedText} 
                       </p>
                     </div>
@@ -270,9 +301,10 @@ const ChatContainer = () => {
                 </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           );
         })}
+        </AnimatePresence>
 
         {typingUsers.length > 0 && selectedUser && (
           <div key={selectedUser._id} className="chat chat-start">

@@ -4,6 +4,8 @@ import Masonry from "react-masonry-css";
 import HackathonCard from "../components/HackathonCard";
 import ExploreBackground from "../components/ExploreBackground";
 import { themeColors } from "../constants/themeToRgb";
+import { useThemeStore } from "../store/useThemeStore";
+import { Search } from "lucide-react";
 
 const ExplorePage = () => {
   const {
@@ -12,15 +14,24 @@ const ExplorePage = () => {
     hasMoreHackathons,
     isLoading,
     searchFilter,
+    changeSearchFilter
   } = useHackStore();
+  const { theme } = useThemeStore()
 
   const [page, setPage] = useState(1);
   const observerRef = useRef(null);
   const limit = 2;
   const skip = hackathons?.length || 0;
+
+  const [text, setText] = useState("");
+
+  const handleFormChange = (e) => {
+    e.preventDefault();
+    changeSearchFilter(text);
+  };
   
 
-  const color = themeColors["forest"] || "255,255,255";//TO-DO: add actual theme via store and localstorage and make a animated bg toggle
+  const color = themeColors[theme] || "255,255,255";
 
 
   useEffect(() => {
@@ -57,6 +68,24 @@ const ExplorePage = () => {
   return (   
     <div className="min-h-screen pt-10 container mx-auto max-w-5xl px-6 ">
       <ExploreBackground color={color}/>
+      <div className="md:hidden flex justify-center items-center">
+         <form
+          onSubmit={handleFormChange}
+          className="flex items-center bg-base-200 rounded-md px-3 py-1 w-[400px]"
+          >
+          <input
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Search..."
+              className="w-full bg-transparent outline-none"
+          />
+          <button type="submit">
+              <Search className="text-primary" />
+          </button>
+        </form>
+      </div>
+       
       <Masonry
         breakpointCols={breakpointColumnsObj}
         className="my-masonry-grid"

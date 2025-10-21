@@ -14,7 +14,6 @@ export const useAuthStore = create((set, get) => ({
   isCheckingAuth: true,
   onlineUsers: [],
   socket:null,
-  callToken:null,
 
   checkAuth: async () => {
     try {
@@ -153,24 +152,15 @@ export const useAuthStore = create((set, get) => ({
     if (get().socket?.connected) get().socket.disconnect();
   },
 
-//   callHandler:async()=>{
-//     try {
-//       const response = await axiosInstance.get("/videocall/token");
-//       // set({callToken:response.data})
-//       // console.log(get().callToken)
-//       return response.data;
-//     } catch (error) {
-//       console.log("something wrong in stream videocall");
-//       toast.error(error.response?.data?.message||"something went wrong");
-//     }
-//   },
-
-//   scheDuleVideoCall:async(data)=>{
-//     try {
-//       await axiosInstance.post("/videocall/schedule",data)
-//     } catch (error) {
-//       console.log("something wrong in stream videocall");
-//       toast.error(error.response?.data?.message||"something went wrong");
-//     }
-//   }
+  callHandler:async()=>{
+    try {
+      const response = await axiosInstance.get("/auth/api/get-stream-token");
+      // set({callToken:response.data})
+      // console.log(get().callToken)
+      return response.data;
+    } catch (error) {
+      console.log("something wrong in stream videocall");
+      toast.error(error.response?.data?.message||"something went wrong");
+    }
+  },
 }));

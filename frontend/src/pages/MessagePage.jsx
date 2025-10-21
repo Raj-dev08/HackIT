@@ -2,6 +2,7 @@ import { useChatStore } from "../store/useChatStore";
 import SideBar from "../components/SideBar";
 import MessageBar from "../components/MessageBar";
 import ChatContainer from "../components/ChatContainer";
+import ChatSkeleton from "../components/ChatSkeleton";
 
 const MessagePage = () => {
   const { selectedUser } = useChatStore();
@@ -24,7 +25,13 @@ const MessagePage = () => {
 
               {selectedUser ?  (
                 <ChatContainer/>
-              ) : ""}
+            ) : (
+                <div className="hidden lg:flex justify-center items-center w-full">
+                  <ChatSkeleton/>
+                </div>
+                )
+
+                }
           </div>
         </div>
       </div>

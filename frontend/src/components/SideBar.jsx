@@ -30,7 +30,7 @@ const SideBar = () => {
     ? friends.filter((user) => onlineUsers.includes(user._id))
     : friends;
 
-  if (isLoading) return <Loader2 />;
+  if (isLoading) return <Loader2  className="animate-spin"/>;
 
   return (
     <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200">

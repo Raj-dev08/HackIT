@@ -1,12 +1,16 @@
 import { useRef, useEffect } from "react";
+import { useThemeStore } from "../store/useThemeStore";
+import { themeColors } from "../constants/themeToRgb";
+
 
 export default function ExploreBackground({
-  color = "255,255,255",
+  color = themeColors[useThemeStore.getState().theme] || "255,255,255",
   particleCount = 25,
 }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
   const particlesRef = useRef([]);
+
 
   useEffect(() => {
     const canvas = canvasRef.current;

@@ -14,11 +14,17 @@ import FriendsList from "./pages/FriendList"
 import IncomingFriendRequests from "./pages/InComingFriendRequests"
 import OutgoingFriendRequests from "./pages/OutgoingFriendRequests"
 import Notifications from "./pages/Notifications"
-import MessagePage from "./pages/MessagePage";
+import MessagePage from "./pages/MessagePage"
+import Profile from "./pages/Profile"
+import CallPage from "./pages/CallPage"
+import SettingsPage from "./pages/SettingsPage"
+
+import NavBar from "./components/NavBar";
 
 import { useAuthStore } from "./store/useAuthStore"
 import { useFriendStore } from "./store/useFriendStore"
-import { useChatStore } from "./store/useChatStore";
+import { useChatStore } from "./store/useChatStore"
+import { useThemeStore } from "./store/useThemeStore";
 
 import { Toaster } from "react-hot-toast"
 import { Loader } from "lucide-react"
@@ -28,6 +34,7 @@ function App() {
   const { setSocketListenerForNotifications } = useFriendStore();
   const { subscribeToMessageEvents } = useChatStore();
   const [ isSocketSetUp , setIsSocketSetup ] = useState(false)
+  const { theme }=useThemeStore();
 
   useEffect(() => {
     checkAuth();
@@ -49,8 +56,10 @@ function App() {
 
     // console.log(authUser)
   return (
-    <div data-theme="forest">
+    <div data-theme={theme} className="relative">
       <Toaster position="top-right" reverseOrder={false} />
+      <NavBar/>
+      <div className="md:mt-[56px]">
        <Routes>
             <Route path="/" element={authUser?<ExplorePage/>:<Navigate to="/login"/>}/>
             <Route path="/signup" element={!authUser?<SignUpPage />:<Navigate to="/"/>} />
@@ -64,7 +73,11 @@ function App() {
             <Route path="/outgoing-friend-requests" element={authUser?<OutgoingFriendRequests/>:<Navigate to="/login"/>}/>
             <Route path="/notifications" element={authUser?<Notifications/>:<Navigate to="/login"/>}/>
             <Route path="/messages" element={authUser?<MessagePage/>:<Navigate to="/login"/>}/>
+            <Route path="/users/:id" element={authUser?<Profile/>:<Navigate to="/login"/>}/>
+            <Route path="/call/:id" element={authUser?<CallPage/>:<Navigate to="/login"/>}/>
+            <Route path="/settings" element={<SettingsPage/>}/>
         </Routes>
+        </div>
     </div>
   )
 }

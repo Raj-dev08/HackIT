@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFriendStore } from "../store/useFriendStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { Search , Loader2 } from 'lucide-react';
+import { Link } from "react-router-dom";
 
 const FriendsList = () => {
   const { friends, getFriends, searchUsers, sendFriendRequest , searchResults , isLoading , isSendingRequest } = useFriendStore();
@@ -15,12 +16,6 @@ const FriendsList = () => {
     getFriends();
   }, []);
 
-
-  const handleSendRequest = (userId) => {
-    sendFriendRequest(userId);
-    // Optionally show a toast or update searchResults to reflect sent request
-  };
-
   const handleSearch = async (e) => {
     e.preventDefault()
     if (!searchTerm.trim()) return 
@@ -29,7 +24,6 @@ const FriendsList = () => {
 
   const displayList = searchTerm.trim() ? searchResults : friends;
 
-  console.log(displayList)
 
 
   return (
@@ -68,30 +62,32 @@ const FriendsList = () => {
                     className="relative bg-base-100 border border-base-300 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer p-5 flex flex-col items-start gap-4"
                 >
                     <div className="flex items-center gap-4 w-full">
-                    <img
-                        src={user.profilePic || "https://i.pravatar.cc/150"}
-                        alt={user.name}
-                        className="w-14 h-14 rounded-full object-cover"
-                    />
-                    <div className="flex flex-col flex-1">
-                        <h3 className="font-semibold text-lg">{user.name}</h3>
-                        {user.description && 
-                        <h3 className="text-sm text-base-content/70 truncate">{user.description}</h3>
-                        }
-                    </div>
+                        <Link to={`/users/${user._id}`}>
+                            <img
+                                src={user.profilePic || "https://i.pravatar.cc/150"}
+                                alt={user.name}
+                                className="w-14 h-14 rounded-full object-cover"
+                            />
+                            <div className="flex flex-col flex-1">
+                                <h3 className="font-semibold text-lg">{user.name}</h3>
+                                {user.description && 
+                                <h3 className="text-sm text-base-content/70 truncate">{user.description}</h3>
+                                }
+                            </div>
+                        </Link>
 
-                    {/* Unread badge for friends */}
-                    {user?.friends?.includes(authUser._id) && user.unreadCount > 0 && (
-                        <span className="absolute top-3 right-3 bg-error text-white text-xs font-semibold rounded-full px-2 py-1">
-                        {user.unreadCount}
-                        </span>
-                    )}
+                        {/* Unread badge for friends */}
+                        {user?.friends?.includes(authUser._id) && user.unreadCount > 0 && (
+                            <span className="absolute top-3 right-3 bg-error text-white text-xs font-semibold rounded-full px-2 py-1">
+                            {user.unreadCount}
+                            </span>
+                        )}
                     </div>
 
                     {/* Friend Request button for non-friends */}
                     {!user?.friends?.includes(authUser._id) && (
                     <button
-                        onClick={() => handleSendRequest(user._id)}
+                        onClick={() => sendFriendRequest(user._id)}
                         className="btn btn-sm btn-primary w-full mt-2 rounded-xl"
                         disabled={isSendingRequest}
                     >

@@ -6,7 +6,7 @@ import VoteButtons from '../components/VoteButtons'
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Popover } from "@headlessui/react";
-import { EllipsisVertical, Trash2, Copy ,Loader } from "lucide-react";
+import { EllipsisVertical , Loader } from "lucide-react";
 import toast from "react-hot-toast";
 
 
