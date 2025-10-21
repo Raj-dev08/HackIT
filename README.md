@@ -130,11 +130,15 @@ A[Frontend: React + Tailwind + Framer Motion] --> B[API Endpoint: Node.js + Expr
 B --> C[Auth Service]
 B --> D[Friend Service]
 B --> E[Chat & Message Services]
+B --> K[Hackathon Services]
 B --> F[Socket Service]
 C --> G[MongoDB]
 D --> G
 E --> G
+k --> G
 F --> H[Kafka & Redis]
+D --> H
+E --> H
 ```
 
 ---
