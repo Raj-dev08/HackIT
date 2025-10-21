@@ -135,7 +135,7 @@ B --> F[Socket Service]
 C --> G[MongoDB]
 D --> G
 E --> G
-k --> G
+K --> G
 F --> H[Kafka & Redis]
 D --> H
 E --> H
